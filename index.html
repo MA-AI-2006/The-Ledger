@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Ledger — Mahirah's Financial Digest</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..700&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root{
+            --bg:#F6F4EE;
+            --paper:#FFFFFF;
+            --ink:#201C29;
+            --ink-soft:#6E6A78;
+            --indigo:#33268C;
+            --indigo-deep:#211653;
+            --coral:#FF5D4A;
+            --mustard:#F2A400;
+            --teal:#009688;
+            --pink:#D6336C;
+            --slate:#5B5570;
+            --stone:#A39B8B;
+            --line:#E7E2D6;
+        }
+        *{ box-sizing:border-box; }
+        body{ background:var(--bg); color:var(--ink); font-family:'Inter', sans-serif; min-height:100vh; }
+        .font-display{ font-family:'Fraunces', serif; }
+        .font-data{ font-family:'Space Grotesk', sans-serif; }
+        .hidden{ display:none !important; }
+
+        .masthead{ background:linear-gradient(135deg, var(--indigo), var(--indigo-deep)); color:#F6F4EE; }
+        .paper-card{ background:var(--paper); border:1px solid var(--line); border-radius:4px; }
+        .hairline{ border-color:var(--line); }
+        .eyebrow{ letter-spacing:0.14em; text-transform:uppercase; font-size:0.7rem; font-weight:600; color:var(--ink-soft); }
+
+        .chip{ border:1.5px solid var(--line); border-radius:999px; padding:0.4rem 0.9rem; font-size:0.82rem; font-weight:600; cursor:pointer; transition:all .15s ease; background:#fff; color:var(--ink-soft); }
+        .chip.active{ color:#fff; border-color:transparent; }
+        .chip:hover{ border-color:var(--ink-soft); }
+
+        .cat-pill{ display:inline-flex; align-items:center; gap:0.35rem; font-size:0.72rem; font-weight:700; letter-spacing:0.03em; text-transform:uppercase; padding:0.2rem 0.6rem; border-radius:999px; }
+        .cat-dot{ width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+
+        .pull-quote{ position:relative; background:var(--paper); border:1px solid var(--line); border-radius:4px; overflow:hidden; }
+        .pull-quote::before{ content:'"'; position:absolute; top:-2.2rem; left:0.5rem; font-family:'Fraunces', serif; font-size:11rem; color:var(--indigo); opacity:0.07; line-height:1; pointer-events:none; }
+
+        input[type="text"], input[type="number"], select{
+            border:1.5px solid var(--line); border-radius:3px; padding:0.7rem 0.85rem; width:100%;
+            font-family:'Inter', sans-serif; font-size:0.92rem; background:#fff; color:var(--ink);
+            outline:none; transition:border-color .15s ease;
+        }
+        input:focus, select:focus{ border-color:var(--indigo); }
+
+        .btn-primary{ background:var(--indigo); color:#fff; font-weight:700; border-radius:3px; transition:background .15s ease; }
+        .btn-primary:hover{ background:var(--indigo-deep); }
+        .btn-ghost{ background:transparent; border:1.5px solid var(--line); font-weight:600; border-radius:3px; color:var(--ink); transition:all .15s ease; }
+        .btn-ghost:hover{ border-color:var(--indigo); color:var(--indigo); }
+
+        .progress-track{ background:#EFEBE0; border-radius:999px; height:8px; overflow:hidden; }
+        .progress-fill{ height:100%; border-radius:999px; transition:width .3s ease; }
+
+        .icon-btn{ width:30px; height:30px; display:inline-flex; align-items:center; justify-content:center; border-radius:3px; border:1.5px solid var(--line); background:#fff; cursor:pointer; transition:all .15s ease; }
+        .icon-btn:hover{ border-color:var(--indigo); }
+        .icon-btn.danger:hover{ border-color:var(--coral); background:#FFF1EF; }
+
+        .stat-figure{ font-family:'Space Grotesk', sans-serif; font-weight:700; }
+
+        ::-webkit-scrollbar{ width:8px; }
+        ::-webkit-scrollbar-thumb{ background:var(--line); border-radius:99px; }
+    </style>
+</head>
+<body>
+
+    <!-- LOGIN SCREEN -->
+    <div id="login-screen" class="min-h-screen flex items-center justify-center p-6">
+        <div class="max-w-md w-full">
+            <div class="masthead px-10 py-14 text-center rounded-t-sm">
+                <p class="eyebrow text-white/60 mb-4">Vol. 01 &middot; Student Edition</p>
+                <h1 class="font-display text-5xl font-bold mb-3">The Ledger</h1>
+                <p class="font-display italic text-white/70 text-lg">A running record of Mahirah's spending, kept plainly.</p>
+            </div>
+            <div class="paper-card border-t-0 rounded-b-sm px-10 py-10 text-center">
+                <p class="text-sm text-[var(--ink-soft)] mb-6">Sign in to open this issue.</p>
+                <button id="login-btn" class="w-full btn-primary p-4 text-sm tracking-wide">
+                    SIGN IN WITH GOOGLE
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP SCREEN -->
+    <div id="main-app" class="max-w-6xl mx-auto hidden p-4 md:p-8">
+
+        <!-- MASTHEAD -->
+        <div class="masthead rounded-sm px-6 md:px-10 py-8 mb-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div>
+                <p class="eyebrow text-white/60 mb-2">Vol. 01 &middot; Updated Live</p>
+                <h1 class="font-display text-4xl md:text-5xl font-bold leading-none mb-2">The Ledger</h1>
+                <p id="user-display" class="font-display italic text-white/70 text-sm"></p>
+            </div>
+            <div class="flex items-end gap-8">
+                <div>
+                    <p class="eyebrow text-white/60 mb-1">This Month</p>
+                    <p id="masthead-total" class="stat-figure text-4xl md:text-5xl">$0.00</p>
+                </div>
+                <button id="logout-btn" class="btn-ghost border-white/30 text-white px-4 py-2 text-xs tracking-wide hover:text-white hover:border-white">LOG OUT</button>
+            </div>
+        </div>
+
+        <!-- TOP GRID: FORM | TRANSACTIONS -->
+        <div class="grid lg:grid-cols-3 gap-8 mb-8 items-start">
+            <!-- LEFT COLUMN -->
+            <div class="lg:col-span-1">
+
+                <!-- ADD EXPENSE -->
+                <div class="paper-card p-6">
+                    <p class="eyebrow mb-1">New Entry</p>
+                    <h2 class="font-display text-xl font-bold mb-5">Log an Expense</h2>
+                    <form id="expense-form" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-[var(--ink-soft)] mb-1.5 uppercase tracking-wide">What did you buy?</label>
+                            <input type="text" id="ex-name" placeholder="e.g. Cinema tickets" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-[var(--ink-soft)] mb-1.5 uppercase tracking-wide">Amount ($)</label>
+                            <input type="number" step="0.01" id="ex-amount" placeholder="0.00" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-[var(--ink-soft)] mb-2 uppercase tracking-wide">Category</label>
+                            <div id="category-chips" class="flex flex-wrap gap-2"></div>
+                        </div>
+                        <button type="submit" class="w-full btn-primary p-3.5 text-sm tracking-wide mt-2">SAVE ENTRY</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- RIGHT COLUMN: TRANSACTIONS -->
+            <div class="lg:col-span-2">
+                <div class="paper-card p-6">
+                    <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+                        <div>
+                            <p class="eyebrow mb-1">The Record</p>
+                            <h2 class="font-display text-xl font-bold">Recent Transactions</h2>
+                        </div>
+                        <button id="export-csv-btn" class="btn-ghost px-3 py-2 text-xs tracking-wide">EXPORT CSV ↓</button>
+                    </div>
+                    <div class="flex flex-col sm:flex-row gap-3 mb-5">
+                        <input type="text" id="search-input" placeholder="Search transactions..." class="sm:flex-1">
+                        <select id="category-filter" class="sm:w-48">
+                            <option value="All">All Categories</option>
+                        </select>
+                    </div>
+                    <div id="expense-list" class="space-y-2.5 overflow-y-auto max-h-[420px] pr-1"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- BUDGETS: FULL-WIDTH HORIZONTAL STRIP -->
+        <div class="paper-card p-6 mb-8">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+                <div>
+                    <p class="eyebrow mb-1">Monthly Limits</p>
+                    <h2 class="font-display text-xl font-bold">Budgets</h2>
+                </div>
+                <button id="save-budgets-btn" class="btn-ghost px-4 py-2 text-xs tracking-wide">SAVE BUDGETS</button>
+            </div>
+            <div id="budget-list" class="grid sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-5"></div>
+        </div>
+
+        <!-- MONTHLY SUMMARY STRIP -->
+        <div class="grid sm:grid-cols-3 gap-5 mb-8">
+            <div class="paper-card p-5">
+                <p class="eyebrow mb-2">This Month</p>
+                <p id="stat-this-month" class="stat-figure text-3xl">$0.00</p>
+            </div>
+            <div class="paper-card p-5">
+                <p class="eyebrow mb-2">Vs. Last Month</p>
+                <p id="stat-delta" class="stat-figure text-3xl">—</p>
+            </div>
+            <div class="paper-card p-5">
+                <p class="eyebrow mb-2">Top Category</p>
+                <div id="stat-top-category" class="mt-1"><span class="text-[var(--ink-soft)] text-sm">No data yet</span></div>
+            </div>
+        </div>
+
+        <!-- CHARTS -->
+        <div class="grid lg:grid-cols-2 gap-8 mb-8">
+            <div class="paper-card p-6">
+                <p class="eyebrow mb-1">Breakdown</p>
+                <h2 class="font-display text-xl font-bold mb-4">Spend by Category</h2>
+                <div class="relative" style="height:260px;"><canvas id="category-chart"></canvas></div>
+            </div>
+            <div class="paper-card p-6">
+                <p class="eyebrow mb-1">Trend</p>
+                <h2 class="font-display text-xl font-bold mb-4">Last 6 Months</h2>
+                <div class="relative" style="height:260px;"><canvas id="trend-chart"></canvas></div>
+            </div>
+        </div>
+
+        <!-- AI ADVISOR -->
+        <div class="pull-quote p-8 md:p-10 mb-8">
+            <p class="eyebrow mb-2">Editor's Note</p>
+            <h3 class="font-display text-2xl font-bold mb-4">AI Financial Advisor</h3>
+            <div id="ai-insight" class="font-display italic text-lg leading-relaxed mb-6 text-[var(--ink)] max-w-2xl">
+                Click "Analyze Habits" for a personalized read on this month's spending.
+            </div>
+            <button id="ai-btn" class="btn-primary px-5 py-3 text-sm tracking-wide">
+                ASK AI TO ANALYZE HABITS
+            </button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, query, where, onSnapshot, getDocs, doc, updateDoc, deleteDoc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBoK_7cE8llKAJVCO8xUu_48Gri5di6a0M",
+            authDomain: "personal-expense-tracker-3c244.firebaseapp.com",
+            projectId: "personal-expense-tracker-3c244",
+            storageBucket: "personal-expense-tracker-3c244.firebasestorage.app",
+            messagingSenderId: "574667701977",
+            appId: "1:574667701977:web:411bf5989caf5c367488c8",
+            measurementId: "G-KJQ9H38V53"
+        };
+
+        // Gemini key is requested at runtime, never hardcoded, never persisted.
+        let GEMINI_API_KEY = null;
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
+
+        const CATEGORIES = [
+            { key: 'Food',          color: '#FF5D4A' },
+            { key: 'Transport',     color: '#009688' },
+            { key: 'Education',     color: '#33268C' },
+            { key: 'Entertainment', color: '#D6336C' },
+            { key: 'Shopping',      color: '#F2A400' },
+            { key: 'Bills',         color: '#5B5570' },
+            { key: 'Other',         color: '#A39B8B' }
+        ];
+        const CAT_COLOR = Object.fromEntries(CATEGORIES.map(c => [c.key, c.color]));
+
+        const loginScreen = document.getElementById('login-screen');
+        const mainApp = document.getElementById('main-app');
+        const expenseList = document.getElementById('expense-list');
+        const userDisplay = document.getElementById('user-display');
+        const categoryChips = document.getElementById('category-chips');
+        const categoryFilter = document.getElementById('category-filter');
+        const searchInput = document.getElementById('search-input');
+        const budgetList = document.getElementById('budget-list');
+
+        let currentUser = null;
+        let unsubscribeExpenses = null;
+        let unsubscribeBudgets = null;
+        let allExpenses = [];
+        let budgets = {};
+        let selectedCategory = 'Other';
+        let editingId = null;
+        let categoryChart = null;
+        let trendChart = null;
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+        function money(n) { return `$${Number(n || 0).toFixed(2)}`; }
+        function getDate(ex) {
+            return ex.timestamp && ex.timestamp.toDate ? ex.timestamp.toDate() : new Date(ex.timestamp);
+        }
+        function monthKey(d) { return `${d.getFullYear()}-${d.getMonth()}`; }
+        function catColor(cat) { return CAT_COLOR[cat] || CAT_COLOR['Other']; }
+
+        // Build category chips (add-expense form) and filter dropdown
+        function initCategoryUI() {
+            categoryChips.innerHTML = CATEGORIES.map(c => `
+                <button type="button" data-cat="${c.key}" class="chip" style="--c:${c.color}">${c.key}</button>
+            `).join('');
+            categoryChips.querySelectorAll('.chip').forEach(chip => {
+                chip.addEventListener('click', () => {
+                    selectedCategory = chip.dataset.cat;
+                    refreshChipStyles();
+                });
+            });
+            refreshChipStyles();
+
+            categoryFilter.innerHTML = `<option value="All">All Categories</option>` +
+                CATEGORIES.map(c => `<option value="${c.key}">${c.key}</option>`).join('');
+        }
+        function refreshChipStyles() {
+            categoryChips.querySelectorAll('.chip').forEach(chip => {
+                const active = chip.dataset.cat === selectedCategory;
+                chip.classList.toggle('active', active);
+                chip.style.background = active ? chip.style.getPropertyValue('--c') : '#fff';
+                chip.style.borderColor = active ? chip.style.getPropertyValue('--c') : '';
+            });
+        }
+
+        document.getElementById('login-btn').onclick = () => signInWithPopup(auth, provider);
+        document.getElementById('logout-btn').onclick = () => signOut(auth);
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                loginScreen.classList.add('hidden');
+                mainApp.classList.remove('hidden');
+                userDisplay.innerText = `Kept for ${user.displayName}`;
+                initCategoryUI();
+                loadExpenses();
+                loadBudgets();
+            } else {
+                loginScreen.classList.remove('hidden');
+                mainApp.classList.add('hidden');
+                currentUser = null;
+                allExpenses = [];
+                budgets = {};
+                if (unsubscribeExpenses) { unsubscribeExpenses(); unsubscribeExpenses = null; }
+                if (unsubscribeBudgets) { unsubscribeBudgets(); unsubscribeBudgets = null; }
+            }
+        });
+
+        // ---------- EXPENSES ----------
+        document.getElementById('expense-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const nameInput = document.getElementById('ex-name');
+            const amountInput = document.getElementById('ex-amount');
+            const name = nameInput.value.trim();
+            const amount = parseFloat(amountInput.value);
+
+            if (!name || isNaN(amount) || amount <= 0) {
+                alert("Please enter a valid expense name and a positive amount.");
+                return;
+            }
+
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.innerText = "SAVING...";
+            try {
+                await addDoc(collection(db, "expenses"), {
+                    uid: currentUser.uid,
+                    name: name,
+                    amount: amount,
+                    category: selectedCategory,
+                    timestamp: new Date()
+                });
+                e.target.reset();
+                selectedCategory = 'Other';
+                refreshChipStyles();
+            } catch (err) {
+                alert("Failed to save transaction: " + err.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerText = "SAVE ENTRY";
+            }
+        };
+
+        function loadExpenses() {
+            // Query by uid only (no orderBy) to avoid needing a composite index;
+            // sorting and filtering happen client-side instead.
+            const q = query(collection(db, "expenses"), where("uid", "==", currentUser.uid));
+            unsubscribeExpenses = onSnapshot(q, (snapshot) => {
+                allExpenses = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                renderAll();
+            }, (err) => {
+                expenseList.innerHTML = `<p class="text-[var(--coral)] text-sm text-center py-8">Failed to load transactions: ${escapeHtml(err.message)}</p>`;
+            });
+        }
+
+        window.editExpense = (id) => { editingId = id; renderTransactions(); };
+        window.cancelEdit = () => { editingId = null; renderTransactions(); };
+        window.saveEdit = async (id) => {
+            const row = document.querySelector(`[data-edit-row="${id}"]`);
+            const name = row.querySelector('.edit-name').value.trim();
+            const amount = parseFloat(row.querySelector('.edit-amount').value);
+            const category = row.querySelector('.edit-category').value;
+            if (!name || isNaN(amount) || amount <= 0) {
+                alert("Please enter a valid name and positive amount.");
+                return;
+            }
+            try {
+                await updateDoc(doc(db, "expenses", id), { name, amount, category });
+                editingId = null;
+            } catch (err) {
+                alert("Failed to update: " + err.message);
+            }
+        };
+        window.deleteExpense = async (id) => {
+            if (!confirm("Delete this transaction? This can't be undone.")) return;
+            try {
+                await deleteDoc(doc(db, "expenses", id));
+            } catch (err) {
+                alert("Failed to delete: " + err.message);
+            }
+        };
+
+        searchInput.addEventListener('input', renderTransactions);
+        categoryFilter.addEventListener('change', renderTransactions);
+
+        function renderTransactions() {
+            const term = searchInput.value.trim().toLowerCase();
+            const filterCat = categoryFilter.value;
+
+            let filtered = allExpenses.filter(ex => {
+                const matchesTerm = !term || ex.name.toLowerCase().includes(term);
+                const matchesCat = filterCat === 'All' || (ex.category || 'Other') === filterCat;
+                return matchesTerm && matchesCat;
+            });
+            filtered.sort((a, b) => getDate(b) - getDate(a));
+
+            if (filtered.length === 0) {
+                expenseList.innerHTML = `<p class="text-[var(--ink-soft)] text-sm italic text-center py-10">No transactions match. Add one, or clear your filters.</p>`;
+                return;
+            }
+
+            expenseList.innerHTML = filtered.map(ex => {
+                const cat = ex.category || 'Other';
+                const color = catColor(cat);
+                if (ex.id === editingId) {
+                    return `
+                    <div data-edit-row="${ex.id}" class="p-3.5 bg-[#FBFAF6] rounded border-2" style="border-color:${color}">
+                        <div class="grid sm:grid-cols-3 gap-2 mb-2">
+                            <input type="text" class="edit-name" value="${escapeHtml(ex.name)}">
+                            <input type="number" step="0.01" class="edit-amount" value="${ex.amount}">
+                            <select class="edit-category">
+                                ${CATEGORIES.map(c => `<option value="${c.key}" ${c.key===cat?'selected':''}>${c.key}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="flex gap-2 justify-end">
+                            <button onclick="cancelEdit()" class="btn-ghost px-3 py-1.5 text-xs">CANCEL</button>
+                            <button onclick="saveEdit('${ex.id}')" class="btn-primary px-3 py-1.5 text-xs">SAVE</button>
+                        </div>
+                    </div>`;
+                }
+                return `
+                <div class="flex items-center justify-between gap-3 p-3.5 bg-white rounded border-l-4" style="border-color:${color}">
+                    <div class="min-w-0 flex-1">
+                        <p class="font-semibold text-sm truncate">${escapeHtml(ex.name)}</p>
+                        <span class="cat-pill mt-1" style="background:${color}1A; color:${color};">
+                            <span class="cat-dot" style="background:${color}"></span>${cat}
+                        </span>
+                    </div>
+                    <div class="flex items-center gap-3 flex-shrink-0">
+                        <p class="font-data font-semibold text-sm">${money(ex.amount)}</p>
+                        <button class="icon-btn" onclick="editExpense('${ex.id}')" title="Edit">✎</button>
+                        <button class="icon-btn danger" onclick="deleteExpense('${ex.id}')" title="Delete">🗑</button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        // ---------- BUDGETS ----------
+        function loadBudgets() {
+            const ref = doc(db, "budgets", currentUser.uid);
+            unsubscribeBudgets = onSnapshot(ref, (snap) => {
+                budgets = snap.exists() ? snap.data() : {};
+                renderBudgets();
+                renderAll();
+            });
+        }
+
+        function renderBudgets() {
+            const now = new Date();
+            const spentByCategory = computeSpentByCategory(now);
+            budgetList.innerHTML = CATEGORIES.map(c => {
+                const budget = Number(budgets[c.key] || 0);
+                const spent = spentByCategory[c.key] || 0;
+                const pct = budget > 0 ? Math.min(100, (spent / budget) * 100) : 0;
+                const over = budget > 0 && spent > budget;
+                return `
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <span class="cat-pill" style="background:${c.color}1A; color:${c.color};">
+                            <span class="cat-dot" style="background:${c.color}"></span>${c.key}
+                        </span>
+                        <input type="number" data-budget-cat="${c.key}" value="${budget || ''}" placeholder="No limit" class="w-24 text-xs py-1.5 px-2 text-right">
+                    </div>
+                    <div class="progress-track">
+                        <div class="progress-fill" style="width:${pct}%; background:${over ? 'var(--coral)' : c.color};"></div>
+                    </div>
+                    <p class="text-xs mt-1 ${over ? 'text-[var(--coral)] font-semibold' : 'text-[var(--ink-soft)]'}">
+                        ${money(spent)} ${budget > 0 ? 'of ' + money(budget) : 'spent'} ${over ? '— over limit' : ''}
+                    </p>
+                </div>`;
+            }).join('');
+        }
+
+        document.getElementById('save-budgets-btn').onclick = async () => {
+            const updates = {};
+            budgetList.querySelectorAll('[data-budget-cat]').forEach(input => {
+                const val = parseFloat(input.value);
+                updates[input.dataset.budgetCat] = isNaN(val) || val <= 0 ? 0 : val;
+            });
+            try {
+                await setDoc(doc(db, "budgets", currentUser.uid), updates, { merge: true });
+            } catch (err) {
+                alert("Failed to save budgets: " + err.message);
+            }
+        };
+
+        function computeSpentByCategory(referenceDate) {
+            const mk = monthKey(referenceDate);
+            const result = {};
+            allExpenses.forEach(ex => {
+                if (monthKey(getDate(ex)) === mk) {
+                    const cat = ex.category || 'Other';
+                    result[cat] = (result[cat] || 0) + Number(ex.amount || 0);
+                }
+            });
+            return result;
+        }
+
+        // ---------- SUMMARY + CHARTS ----------
+        function renderAll() {
+            renderTransactions();
+            renderBudgets();
+            renderSummary();
+            renderCharts();
+        }
+
+        function renderSummary() {
+            const now = new Date();
+            const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            const thisMonthTotal = sumForMonth(now);
+            const lastMonthTotal = sumForMonth(lastMonthDate);
+
+            document.getElementById('masthead-total').innerText = money(thisMonthTotal);
+            document.getElementById('stat-this-month').innerText = money(thisMonthTotal);
+
+            const deltaEl = document.getElementById('stat-delta');
+            if (lastMonthTotal === 0) {
+                deltaEl.innerText = thisMonthTotal > 0 ? 'New spending' : '—';
+                deltaEl.style.color = 'var(--ink)';
+            } else {
+                const deltaPct = ((thisMonthTotal - lastMonthTotal) / lastMonthTotal) * 100;
+                const sign = deltaPct > 0 ? '+' : '';
+                deltaEl.innerText = `${sign}${deltaPct.toFixed(1)}%`;
+                deltaEl.style.color = deltaPct > 0 ? 'var(--coral)' : 'var(--teal)';
+            }
+
+            const spentByCategory = computeSpentByCategory(now);
+            const top = Object.entries(spentByCategory).sort((a, b) => b[1] - a[1])[0];
+            const topEl = document.getElementById('stat-top-category');
+            if (top) {
+                const [cat, amt] = top;
+                const color = catColor(cat);
+                topEl.innerHTML = `<span class="cat-pill" style="background:${color}1A; color:${color};"><span class="cat-dot" style="background:${color}"></span>${cat}</span> <span class="font-data text-sm ml-2">${money(amt)}</span>`;
+            } else {
+                topEl.innerHTML = `<span class="text-[var(--ink-soft)] text-sm">No data yet</span>`;
+            }
+        }
+
+        function sumForMonth(date) {
+            const mk = monthKey(date);
+            return allExpenses.filter(ex => monthKey(getDate(ex)) === mk)
+                .reduce((sum, ex) => sum + Number(ex.amount || 0), 0);
+        }
+
+        function renderCharts() {
+            if (typeof Chart === 'undefined') {
+                console.error('Chart.js failed to load — check the CDN script tag and your internet connection.');
+                return;
+            }
+            try {
+            const now = new Date();
+            const spentByCategory = computeSpentByCategory(now);
+            const catEntries = Object.entries(spentByCategory).filter(([, v]) => v > 0);
+
+            const catCtx = document.getElementById('category-chart');
+            if (categoryChart) categoryChart.destroy();
+            if (catEntries.length === 0) {
+                categoryChart = null;
+                catCtx.getContext('2d').clearRect(0, 0, catCtx.width, catCtx.height);
+            } else {
+                categoryChart = new Chart(catCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: catEntries.map(([k]) => k),
+                        datasets: [{
+                            data: catEntries.map(([, v]) => v),
+                            backgroundColor: catEntries.map(([k]) => catColor(k)),
+                            borderColor: '#FFFFFF',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { font: { family: 'Inter', size: 11 }, padding: 12, usePointStyle: true } }
+                        },
+                        cutout: '62%'
+                    }
+                });
+            }
+
+            // Last 6 months trend
+            const months = [];
+            for (let i = 5; i >= 0; i--) {
+                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                months.push(d);
+            }
+            const trendLabels = months.map(d => d.toLocaleString('default', { month: 'short' }));
+            const trendData = months.map(d => sumForMonth(d));
+
+            const trendCtx = document.getElementById('trend-chart');
+            if (trendChart) trendChart.destroy();
+            trendChart = new Chart(trendCtx, {
+                type: 'line',
+                data: {
+                    labels: trendLabels,
+                    datasets: [{
+                        data: trendData,
+                        borderColor: '#33268C',
+                        backgroundColor: 'rgba(51,38,140,0.08)',
+                        fill: true,
+                        tension: 0.35,
+                        pointBackgroundColor: '#33268C',
+                        pointRadius: 4
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { font: { family: 'Space Grotesk', size: 11 } }, grid: { color: '#E7E2D6' } },
+                        x: { ticks: { font: { family: 'Inter', size: 11 } }, grid: { display: false } }
+                    }
+                }
+            });
+            } catch (err) {
+                console.error('Chart rendering failed:', err);
+            }
+        }
+
+        // ---------- CSV EXPORT ----------
+        document.getElementById('export-csv-btn').onclick = () => {
+            if (allExpenses.length === 0) { alert("No transactions to export yet."); return; }
+            const rows = [['Date', 'Name', 'Category', 'Amount']];
+            allExpenses.slice().sort((a, b) => getDate(b) - getDate(a)).forEach(ex => {
+                rows.push([
+                    getDate(ex).toISOString().split('T')[0],
+                    `"${(ex.name || '').replace(/"/g, '""')}"`,
+                    ex.category || 'Other',
+                    Number(ex.amount || 0).toFixed(2)
+                ]);
+            });
+            const csv = rows.map(r => r.join(',')).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `ledger-export-${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        };
+
+        // ---------- AI ADVISOR ----------
+        document.getElementById('ai-btn').onclick = async () => {
+            const insightBox = document.getElementById('ai-insight');
+
+            if (!GEMINI_API_KEY) {
+                const key = prompt("Enter your Gemini API key (kept only in memory for this session):");
+                if (!key) { return; }
+                GEMINI_API_KEY = key.trim();
+            }
+
+            insightBox.innerText = "Analyzing your habits, Mahirah...";
+
+            try {
+                if (allExpenses.length === 0) {
+                    insightBox.innerText = "Add some data first!";
+                    return;
+                }
+                const now = new Date();
+                const spentByCategory = computeSpentByCategory(now);
+                const summaryText = Object.entries(spentByCategory)
+                    .map(([cat, amt]) => `${cat}: $${amt.toFixed(2)}`).join(', ');
+                const budgetText = CATEGORIES
+                    .filter(c => budgets[c.key] > 0)
+                    .map(c => `${c.key} budget $${budgets[c.key]}`).join(', ') || 'no budgets set';
+
+                const prompt_text = `Student's spending this month by category: ${summaryText}. Budgets: ${budgetText}. Give Mahirah a 3-sentence summary of her habits and 1 concrete tip to save money.`;
+
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-goog-api-key": GEMINI_API_KEY
+                    },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt_text }] }] })
+                });
+
+                if (!res.ok) { throw new Error(`API returned ${res.status}`); }
+
+                const data = await res.json();
+                const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+                insightBox.innerText = text || "No response received from AI.";
+            } catch (err) {
+                insightBox.innerText = "Error: Check your Gemini key and try again.";
+                GEMINI_API_KEY = null;
+                console.error(err);
+            }
+        };
+    </script>
+</body>
+</html>
