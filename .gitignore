@@ -1,4 +1,5 @@
 node_modules
+# Environment Variables (Holds API Keys)
 .env
 .env.local
 .env.production
